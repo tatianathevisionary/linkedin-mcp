@@ -14,7 +14,7 @@
 
 **Authenticated LinkedIn MCP server — jobs, companies, profiles, people search, and your own posts via the data export. Deployable to FastMCP Cloud in 5 minutes.**
 
-> 🦄 **Identity-led tools for AI-native work.** Your Chrome session is the auth. Your data export is the truth. No OAuth dance, no Marketing API approval.
+> 🦄 ❤️‍🔥 **Identity-led tools for AI-native work.** Your Chrome session is the auth. Your data export is the truth. No OAuth dance, no Marketing API approval.
 
 ## What It Does
 
@@ -348,6 +348,6 @@ If visionary-mcp is useful for your AI-native workflow, please consider giving i
 
 ---
 
-> 🦄 *"AI is the medium I work in. Not a tool I borrow. I'm not a user; I am an author."*
+> 🦄 ❤️‍🔥 *"AI is the medium I work in. Not a tool I borrow. I'm not a user; I am an author."*
 >
-> Built in Calgary by [Tatiana Pustovetova](https://tatianathevisionary.com). 💜
+> Built by [Tatiana Pustovetova](https://tatianathevisionary.com). 💜
