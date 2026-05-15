@@ -49,6 +49,12 @@ Once connected, ask your AI assistant:
 
 Deployed at **`https://visionary-mcp.fastmcp.app/mcp`** on Prefect Horizon. Auth happens via env-var cookies set in the Horizon dashboard.
 
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en-US/install-mcp?name=visionary-mcp&config=eyJ1cmwiOiJodHRwczovL3Zpc2lvbmFyeS1tY3AuZmFzdG1jcC5hcHAvbWNwIn0=)
+
+One-click install to Cursor ⤴ — opens Cursor and pre-fills the MCP config.
+
+Or add this manually:
+
 **For Cursor:**
 ```json
 {
