@@ -57,7 +57,7 @@ async def test_single_post(tmp_path):
     post = result["posts"][0]
     assert post["text"] == "Shipped a new agent today. #AIEngineering"
     assert post["hashtags"] == ["AIEngineering"]
-    assert post["wordCount"] == 5
+    assert post["wordCount"] == 6  # "Shipped a new agent today. #AIEngineering"
     assert post["visibility"] == "PUBLIC"
     assert post["url"] == "https://www.linkedin.com/feed/update/urn:li:activity:123/"
 
