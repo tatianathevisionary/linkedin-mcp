@@ -64,7 +64,9 @@ async def search_jobs(
     query = "(" + ",".join(query_parts) + ")"
 
     params = {
-        "decorationId": "com.linkedin.voyager.dash.deco.jobs.search.JobSearchCardsCollection-220",
+        # Decoration ID matches the TS edition · LinkedIn rotates these
+        # version suffixes when they redeploy; -218 is the current verified one
+        "decorationId": "com.linkedin.voyager.dash.deco.jobs.search.JobSearchCardsCollection-218",
         "q": "jobSearch",
         "query": query,
         "start": str(start),
