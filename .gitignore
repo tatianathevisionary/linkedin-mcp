@@ -1,0 +1,33 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# TypeScript build
+dist/
+*.tsbuildinfo
+
+# Python (FastMCP edition handles its own in fastmcp/.gitignore)
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+
+# Env
+.env
+.env.local
+.env.production
+*.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Data (LinkedIn exports etc)
+*.zip
+*.csv
+data/
+exports/
