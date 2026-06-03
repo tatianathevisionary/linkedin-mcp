@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Optional
+from typing import Any
 
 from voyager import VoyagerClient
 
@@ -21,7 +21,7 @@ from .parsers import (
 )
 
 
-async def fetch_profile() -> Optional[dict[str, Any]]:
+async def fetch_profile() -> dict[str, Any] | None:
     """
     Fetch the FULL profile of the currently logged-in LinkedIn user.
 
@@ -110,7 +110,7 @@ async def fetch_profile() -> Optional[dict[str, Any]]:
     }
 
 
-async def fetch_person(profile_input: str) -> Optional[dict[str, Any]]:
+async def fetch_person(profile_input: str) -> dict[str, Any] | None:
     """
     Fetch any LinkedIn person's profile by vanity name or LinkedIn URL.
 

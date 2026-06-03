@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Optional
+from typing import Any
 
 import httpx
 
@@ -42,12 +42,12 @@ class VoyagerClient:
             data = await client.get("/identity/profiles/me")
     """
 
-    def __init__(self, auth: Optional[LinkedInAuth] = None, timeout: float = DEFAULT_TIMEOUT):
+    def __init__(self, auth: LinkedInAuth | None = None, timeout: float = DEFAULT_TIMEOUT):
         self.auth = auth or load_auth()
-        self._client: Optional[httpx.AsyncClient] = None
+        self._client: httpx.AsyncClient | None = None
         self._timeout = timeout
 
-    async def __aenter__(self) -> "VoyagerClient":
+    async def __aenter__(self) -> VoyagerClient:
         self._client = httpx.AsyncClient(
             base_url=BASE_URL,
             timeout=self._timeout,
@@ -61,7 +61,7 @@ class VoyagerClient:
             await self._client.aclose()
             self._client = None
 
-    async def get(self, path: str, params: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    async def get(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
         """GET a Voyager endpoint. Raises VoyagerError on non-200."""
         if not self._client:
             raise RuntimeError("VoyagerClient must be used as an async context manager")
@@ -78,7 +78,7 @@ class VoyagerClient:
         except Exception as e:
             raise VoyagerError(500, f"Invalid JSON: {e}", url) from e
 
-    async def get_raw(self, path: str, params: Optional[dict[str, Any]] = None) -> httpx.Response:
+    async def get_raw(self, path: str, params: dict[str, Any] | None = None) -> httpx.Response:
         """GET a Voyager endpoint and return the raw response (no JSON parsing)."""
         if not self._client:
             raise RuntimeError("VoyagerClient must be used as an async context manager")

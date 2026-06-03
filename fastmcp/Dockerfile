@@ -10,10 +10,14 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
 WORKDIR /app
 
-# Copy dependency manifests first for better layer caching
-COPY pyproject.toml ./
+# Copy the full project before building. `uv pip install .` builds a wheel via
+# hatchling, which needs: README.md (pyproject declares `readme = "README.md"`),
+# the manifest, and the actual package source (`packages = ["linkedin", "."]`).
+COPY pyproject.toml README.md ./
+COPY server.py auth.py voyager.py ./
+COPY linkedin/ ./linkedin/
 
-# Install dependencies into a project-local virtualenv
+# Install the project + dependencies into a project-local virtualenv
 RUN uv venv /app/.venv && \
     uv pip install --python /app/.venv/bin/python --no-cache .
 

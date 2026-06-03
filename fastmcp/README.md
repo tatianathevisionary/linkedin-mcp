@@ -23,7 +23,7 @@ The Python rewrite of the [LinkedIn MCP](../README.md) — built on FastMCP 3.x 
 | `search_linkedin_companies` | Typeahead company lookup |
 | `fetch_linkedin_profile` | YOUR full profile (logged-in user) |
 | `fetch_linkedin_person` | Any user's profile by vanity name or URL |
-| `search_linkedin_people` | People search with connection-degree, company, school, location filters |
+| `search_linkedin_people` | People search with connection-degree + location filters (client-side; company/school not supported — see note) |
 | `fetch_my_posts_from_export_tool` | **Parse LinkedIn data export ZIP** (recommended for posts) |
 | `fetch_my_recent_activity_tool` | Best-effort Voyager fallback for posts |
 
@@ -130,7 +130,7 @@ cd fastmcp
 uv run pytest -v
 ```
 
-CI runs on Python 3.11 + 3.12 via GitHub Actions (see `.github/workflows/ci.yml`).
+CI runs on Python 3.11 + 3.12 via GitHub Actions (see [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml) at the repo root — GitHub only discovers workflows in the root `.github/workflows/`).
 
 ---
 
@@ -151,10 +151,9 @@ fastmcp/
 │   └── posts.py           fetch_my_posts_from_export · fetch_my_recent_activity
 ├── tests/
 │   ├── test_parsers.py
+│   ├── test_jobs.py        search_jobs query build + response parse
 │   ├── test_posts_export.py
 │   └── test_auth.py
-├── .github/workflows/
-│   └── ci.yml
 ├── pyproject.toml         UV-managed deps
 ├── fastmcp.json           FastMCP deployment config
 ├── Dockerfile             Production container

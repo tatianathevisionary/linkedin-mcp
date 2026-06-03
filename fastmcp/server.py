@@ -33,7 +33,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from typing import Annotated, Literal, Optional
+from typing import Annotated, Literal
 
 from fastmcp import FastMCP
 from pydantic import Field
@@ -76,24 +76,24 @@ mcp = FastMCP(
 @mcp.tool
 async def search_linkedin_jobs(
     keywords: Annotated[str, Field(description="Job title, skills, or keywords")],
-    location: Annotated[Optional[str], Field(description="City, state, or region")] = None,
+    location: Annotated[str | None, Field(description="City, state, or region")] = None,
     workplace_type: Annotated[
-        Optional[Literal["onsite", "remote", "hybrid"]],
+        Literal["onsite", "remote", "hybrid"] | None,
         Field(description="Workplace arrangement filter"),
     ] = None,
     job_type: Annotated[
-        Optional[Literal["fulltime", "parttime", "contract", "temporary", "internship"]],
+        Literal["fulltime", "parttime", "contract", "temporary", "internship"] | None,
         Field(description="Employment type filter"),
     ] = None,
     time_posted: Annotated[
-        Optional[Literal["past_24h", "past_week", "past_month"]],
+        Literal["past_24h", "past_week", "past_month"] | None,
         Field(description="Posting recency filter"),
     ] = None,
     easy_apply: Annotated[
-        Optional[bool], Field(description="Only LinkedIn Easy Apply jobs")
+        bool | None, Field(description="Only LinkedIn Easy Apply jobs")
     ] = None,
     experience_level: Annotated[
-        Optional[Literal["intern", "entry", "associate", "mid_senior", "director", "executive"]],
+        Literal["intern", "entry", "associate", "mid_senior", "director", "executive"] | None,
         Field(description="Required experience level"),
     ] = None,
     start: Annotated[int, Field(description="Pagination offset", ge=0)] = 0,
@@ -125,7 +125,7 @@ async def search_linkedin_jobs(
 @mcp.tool
 async def fetch_linkedin_job(
     job_id: Annotated[str, Field(description="Job ID or full LinkedIn jobs URL")],
-) -> Optional[dict]:
+) -> dict | None:
     """Fetch a single LinkedIn job listing by ID or URL."""
     return await fetch_job(job_id)
 
@@ -139,7 +139,7 @@ async def search_linkedin_companies(
     query: Annotated[str, Field(description="Company name or keywords")],
     count: Annotated[int, Field(description="Number of results (max 50)", ge=1, le=50)] = 10,
 ) -> list[dict]:
-    """Typeahead-style company search. Returns id, name, URL, industry, headquarters."""
+    """Typeahead-style company search. Returns id, name, URL, trackingId."""
     return await search_companies(query=query, count=count)
 
 
@@ -148,7 +148,7 @@ async def search_linkedin_companies(
 # ============================================================
 
 @mcp.tool
-async def fetch_linkedin_profile() -> Optional[dict]:
+async def fetch_linkedin_profile() -> dict | None:
     """
     Fetch the FULL profile of the currently logged-in LinkedIn user.
 
@@ -168,7 +168,7 @@ async def fetch_linkedin_person(
         str,
         Field(description='LinkedIn vanity name (e.g. "johndoe") or full URL'),
     ],
-) -> Optional[dict]:
+) -> dict | None:
     """Fetch any LinkedIn person's profile by vanity name or URL."""
     return await fetch_person(profile_input)
 
@@ -181,21 +181,24 @@ async def fetch_linkedin_person(
 async def search_linkedin_people(
     keywords: Annotated[str, Field(description="Name, title, or keywords")],
     network: Annotated[
-        Optional[list[Literal["1st", "2nd", "3rd"]]],
+        list[Literal["1st", "2nd", "3rd"]] | None,
         Field(description="Connection degree filter"),
     ] = None,
-    company: Annotated[Optional[str], Field(description="Current company")] = None,
-    school: Annotated[Optional[str], Field(description="School attended")] = None,
-    location: Annotated[Optional[str], Field(description="Geographic location")] = None,
+    location: Annotated[str | None, Field(description="Geographic location (case-insensitive substring filter)")] = None,
     count: Annotated[int, Field(description="Results per page (max 50)", ge=1, le=50)] = 25,
     start: Annotated[int, Field(description="Pagination offset", ge=0)] = 0,
 ) -> dict:
-    """Search LinkedIn people. Returns paginated results with publicIdentifier, name, headline, location, connection degree."""
+    """
+    Search LinkedIn people. Returns paginated results with publicIdentifier, name,
+    headline, location, connection degree.
+
+    Filters: `network` (connection degree) and `location` are applied client-side
+    to the merged connections + typeahead results. Company/school filtering is not
+    supported (those fields aren't in the search response — use fetch_linkedin_person).
+    """
     return await search_people(
         keywords=keywords,
         network=network,
-        company=company,
-        school=school,
         location=location,
         count=count,
         start=start,
@@ -213,7 +216,7 @@ async def fetch_my_posts_from_export_tool(
         Field(description="Absolute path to the LinkedIn data export ZIP file"),
     ],
     limit: Annotated[
-        Optional[int],
+        int | None,
         Field(description="Max number of posts to return (newest first)", ge=1),
     ] = None,
 ) -> dict:

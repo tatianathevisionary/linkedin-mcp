@@ -16,15 +16,17 @@
 
 > 🦄 ❤️‍🔥 **Identity-led tools for AI-native work.** Your Chrome session is the auth. Your data export is the truth. No OAuth dance, no Marketing API approval.
 
+> ⚠️ **Disclaimer — personal/educational use only.** This project calls LinkedIn's internal, unofficial Voyager API using your own session cookies. LinkedIn's [User Agreement](https://www.linkedin.com/legal/user-agreement) prohibits automated access to the platform. Using this tool may violate those terms and could put your account at risk (warning, rate-limit, or restriction). It's provided for personal research and educational purposes only. **Use at your own risk.**
+
 ## What It Does
 
-visionary-mcp is a **FastMCP 3.x server** exposing **8 authenticated LinkedIn tools** via the internal Voyager API and the official LinkedIn data export. Use it from Claude Code, Claude Desktop, Cursor, VS Code, or any MCP-compatible client.
+visionary-mcp ships **two editions** of a LinkedIn MCP server over the internal Voyager API and the official LinkedIn data export: a **Python FastMCP** edition (production path) registering **8 tools**, and a **TypeScript** edition (macOS/Chrome local) registering **6 tools**. Use it from Claude Code, Claude Desktop, Cursor, VS Code, or any MCP-compatible client.
 
 - **Jobs**: search with workplace, type, recency, Easy Apply, and experience filters · fetch a single job by ID
-- **Companies**: typeahead search returning ID, name, URL, industry, headquarters
+- **Companies**: typeahead search returning ID, name, URL, tracking ID
 - **Profiles**: your full profile (the logged-in user) — positions, education, skills, certifications, projects, languages
-- **People**: search by keywords with connection-degree, company, school, location filters; fetch any profile by vanity name or URL
-- **Posts**: parse a LinkedIn data export ZIP for your own posts (sorted newest-first, hashtags + mentions extracted)
+- **People**: search by keywords with connection-degree and location filters (applied client-side); fetch any profile by vanity name or URL
+- **Posts** (Python only): parse a LinkedIn data export ZIP for your own posts (sorted newest-first, hashtags + mentions extracted)
 
 **Deployable two ways.** Run locally over stdio for personal use, or deploy to **[Prefect Horizon](https://horizon.prefect.io)** (FastMCP Cloud) for a hosted HTTPS endpoint your agents can reach from anywhere.
 
@@ -156,23 +158,23 @@ Add to your MCP client:
 
 See [`fastmcp/README.md`](./fastmcp/README.md) for the full FastMCP-edition details. See [`DEPLOY.md`](./DEPLOY.md) for the FastMCP Cloud / Docker / self-host walkthrough.
 
-## 🛠 Available Tools (8 Total)
+## 🛠 Available Tools — 8 (Python) / 6 (TS)
 
-Every tool carries `ToolAnnotations` (`readOnlyHint`, `openWorldHint`) so MCP clients can skip confirmation prompts where safe. Each tool has typed parameters with Pydantic validation.
+The tool list below describes the **Python FastMCP edition (8 tools)**. The **TypeScript edition registers 6** — the same Discovery + Profiles + People tools, but **not** the two Posts tools (post fetching is Python-only via the data export). Every Python tool carries `ToolAnnotations` (`readOnlyHint`, `openWorldHint`) so MCP clients can skip confirmation prompts where safe. Each tool has typed parameters with Pydantic validation.
 
 ### Discovery (3 tools)
 - **`search_linkedin_jobs`** — Voyager job search. Filters: `keywords`, `location`, `workplace_type` (onsite/remote/hybrid), `job_type` (fulltime/parttime/contract/temporary/internship), `time_posted` (past_24h/past_week/past_month), `easy_apply`, `experience_level` (intern → executive), pagination via `start` + `count`.
 - **`fetch_linkedin_job`** — single job by ID or full LinkedIn jobs URL. Returns title, description, company, location, workplace types, employment status, experience level, apply URL.
-- **`search_linkedin_companies`** — typeahead company lookup. Returns ID, name, URL, industry, headquarters.
+- **`search_linkedin_companies`** — typeahead company lookup. Returns ID, name, URL, tracking ID.
 
 ### Profiles (2 tools)
 - **`fetch_linkedin_profile`** — the logged-in user's full profile. Returns ID, name, headline, summary, picture, profile URL, location, emails, positions, education, skills, certifications, projects, languages.
 - **`fetch_linkedin_person`** — any user's profile by vanity name (`johndoe`) or full URL (`https://linkedin.com/in/johndoe`). Returns the same shape as `fetch_linkedin_profile` plus connection degree and connections count.
 
 ### People Search (1 tool)
-- **`search_linkedin_people`** — filtered people search. Filters: `keywords`, `network` (1st/2nd/3rd connection degree), `company`, `school`, `location`, pagination. Returns vanity ID, name, headline, location, profile URL, connection degree.
+- **`search_linkedin_people`** — filtered people search (connections + global typeahead). Filters: `keywords`, `network` (1st/2nd/3rd connection degree, client-side), `location` (case-insensitive substring, client-side), pagination. Returns vanity ID, name, headline, location, profile URL, connection degree. (Company/school filters are not supported — those fields aren't in the search response; use `fetch_linkedin_person` for per-profile company/school detail.)
 
-### Posts (2 tools)
+### Posts (2 tools · Python edition only)
 - **`fetch_my_posts_from_export_tool`** — parses a LinkedIn data export ZIP. Reliable, official, future-proof. Returns posts sorted newest-first with hashtags, mentions, word count, visibility, URL, media URL.
 - **`fetch_my_recent_activity_tool`** — best-effort fetch via the legacy Voyager `profileUpdatesV2` endpoint. LinkedIn deprecated this when they migrated activity to a GraphQL-only path with rotating query hashes, so it usually returns 400/401. Returns a structured "use export instead" hint when the endpoint fails.
 
@@ -221,7 +223,7 @@ Full walkthroughs in [`DEPLOY.md`](./DEPLOY.md).
 
 ## ⚡ Key Features
 
-- **8 LinkedIn tools** spanning jobs, companies, profiles, people, and posts
+- **8 LinkedIn tools (Python edition) / 6 (TypeScript edition)** spanning jobs, companies, profiles, people, and posts (posts are Python-only)
 - **Two editions in one repo**: TypeScript (stdio · macOS Chrome cookies) + Python FastMCP (stdio/HTTP/SSE · env-var auth · cloud-deployable)
 - **Voyager API + data export hybrid** — uses LinkedIn's internal API where it works, falls back to the official data export where the API broke
 - **Pydantic-validated parameters** — typed schemas with autocomplete in any MCP client
@@ -230,7 +232,7 @@ Full walkthroughs in [`DEPLOY.md`](./DEPLOY.md).
 - **CSRF token handling** — auto-extracts from JSESSIONID cookie per LinkedIn convention
 - **Profile entity parsing** — handles 7+ LinkedIn profile sub-types (Position, Education, Skill, Certification, Project, Language, NetworkInfo)
 - **Post normalization** — extracts hashtags, @-mentions, word counts, media types from export CSV
-- **36/36 pytest tests passing** — parsers, posts export, auth helpers covered
+- **45/45 pytest tests passing** — parsers, jobs query/parse, posts export, auth helpers covered
 - **GitHub Actions CI** — Python 3.11 + 3.12 matrix · Docker build verification
 - **MIT License** — fork it, sell it, modify it, just don't claim someone else's identity as your own
 
@@ -265,7 +267,7 @@ The TypeScript edition predates this repo's FastMCP version. It works great for 
 <details>
 <summary><strong>Will this get my LinkedIn account banned?</strong></summary>
 
-Not in normal personal use. Cookie-based auth ties to your account, so worst case is LinkedIn rate-limits your IP or revokes the cookie (you re-login + grab a fresh one). The server doesn't do anything automated by default — it only responds to your MCP-client calls. High-frequency automated abuse is what triggers bans; manual research, profile fetches, and occasional post pulls don't.
+**It might — there are no guarantees.** This tool accesses LinkedIn's internal API with your session cookies, which LinkedIn's [User Agreement](https://www.linkedin.com/legal/user-agreement) prohibits. LinkedIn actively detects automated access and can warn, rate-limit, restrict, or ban accounts at its discretion. Cookie-based auth ties activity directly to your account, so the risk is yours. Lower-volume, human-paced usage is less likely to trip detection than high-frequency automated calls, but no usage pattern is "safe" under the terms. Use at your own risk; consider it personal/educational only.
 </details>
 
 <details>

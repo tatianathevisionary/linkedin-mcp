@@ -18,7 +18,6 @@ import logging
 import os
 import sys
 from dataclasses import dataclass
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +55,7 @@ class LinkedInAuth:
         }
 
 
-def _build_cookie_header(li_at: str, jsessionid: str, extras: Optional[dict[str, str]] = None) -> str:
+def _build_cookie_header(li_at: str, jsessionid: str, extras: dict[str, str] | None = None) -> str:
     """Build a Cookie header string from individual cookie values."""
     parts = [f"li_at={li_at}", f'JSESSIONID="{jsessionid.strip(chr(34))}"']
     if extras:
@@ -65,7 +64,7 @@ def _build_cookie_header(li_at: str, jsessionid: str, extras: Optional[dict[str,
     return "; ".join(parts)
 
 
-def load_from_env() -> Optional[LinkedInAuth]:
+def load_from_env() -> LinkedInAuth | None:
     """Load auth from environment variables. Returns None if either is missing."""
     li_at = os.environ.get("LINKEDIN_LI_AT_COOKIE")
     jsessionid = os.environ.get("LINKEDIN_JSESSIONID")
@@ -85,7 +84,7 @@ def load_from_env() -> Optional[LinkedInAuth]:
     )
 
 
-def load_from_chrome() -> Optional[LinkedInAuth]:
+def load_from_chrome() -> LinkedInAuth | None:
     """
     Load auth from local Chrome session (macOS only).
 
