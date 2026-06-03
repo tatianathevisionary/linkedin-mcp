@@ -2,10 +2,6 @@
 
 from __future__ import annotations
 
-import os
-
-import pytest
-
 from auth import LinkedInAuth, _build_cookie_header, load_from_env
 
 

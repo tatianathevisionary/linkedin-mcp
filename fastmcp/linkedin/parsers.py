@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 PROFILE_TYPE_PREFIX = "com.linkedin.voyager.dash.identity.profile."
 
 
-def format_date(date_field: Optional[dict[str, Any]]) -> Optional[str]:
+def format_date(date_field: dict[str, Any] | None) -> str | None:
     """Format LinkedIn DateField (month/year) as 'YYYY-MM' or 'YYYY'."""
     if not date_field or not date_field.get("year"):
         return None
@@ -30,7 +30,7 @@ def profile_type(suffix: str) -> str:
     return PROFILE_TYPE_PREFIX + suffix
 
 
-def build_picture_url(pic: Optional[dict[str, Any]]) -> Optional[str]:
+def build_picture_url(pic: dict[str, Any] | None) -> str | None:
     """Build the highest-resolution profile picture URL from LinkedIn's artifacts array."""
     if not pic:
         return None
@@ -127,9 +127,9 @@ def parse_projects(entities: dict[str, list[dict[str, Any]]]) -> list[dict[str, 
 def parse_languages(entities: dict[str, list[dict[str, Any]]]) -> list[str]:
     """Parse Language entities."""
     return [
-        (l.get("name") or "").strip()
-        for l in entities.get(profile_type("Language"), [])
-        if l.get("name")
+        (lang.get("name") or "").strip()
+        for lang in entities.get(profile_type("Language"), [])
+        if lang.get("name")
     ]
 
 

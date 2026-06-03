@@ -20,9 +20,9 @@ import io
 import logging
 import re
 import zipfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from voyager import VoyagerClient, VoyagerError, extract_hashtags, extract_mentions
 
@@ -38,7 +38,7 @@ REACTIONS_FILES = ["Reactions.csv", "reactions.csv"]
 
 async def fetch_my_posts_from_export(
     export_zip_path: str,
-    limit: Optional[int] = None,
+    limit: int | None = None,
 ) -> dict[str, Any]:
     """
     Parse the LinkedIn data export ZIP and return normalized posts.
@@ -133,12 +133,12 @@ async def fetch_my_posts_from_export(
     return {
         "total": len(posts),
         "posts": posts,
-        "fetchedAt": datetime.now(timezone.utc).isoformat(),
+        "fetchedAt": datetime.now(UTC).isoformat(),
         "source": "linkedin-data-export",
     }
 
 
-def _normalize_date(date_str: Optional[str]) -> Optional[str]:
+def _normalize_date(date_str: str | None) -> str | None:
     """Normalize LinkedIn export date strings to ISO 8601."""
     if not date_str:
         return None
@@ -146,7 +146,7 @@ def _normalize_date(date_str: Optional[str]) -> Optional[str]:
     cleaned = date_str.strip().replace(" UTC", "")
     for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%m/%d/%Y %H:%M:%S", "%m/%d/%Y"):
         try:
-            dt = datetime.strptime(cleaned, fmt).replace(tzinfo=timezone.utc)
+            dt = datetime.strptime(cleaned, fmt).replace(tzinfo=UTC)
             return dt.isoformat()
         except ValueError:
             continue
@@ -231,7 +231,7 @@ async def fetch_my_recent_activity(count: int = 20) -> dict[str, Any]:
         return {
             "total": len(posts),
             "posts": posts,
-            "fetchedAt": datetime.now(timezone.utc).isoformat(),
+            "fetchedAt": datetime.now(UTC).isoformat(),
             "source": "voyager-profileUpdatesV2",
             "warning": (
                 "This endpoint is deprecated. Engagement counts may be missing or "
@@ -240,7 +240,7 @@ async def fetch_my_recent_activity(count: int = 20) -> dict[str, Any]:
         }
 
 
-def _parse_share(share: dict[str, Any], included: list[dict[str, Any]]) -> Optional[dict[str, Any]]:
+def _parse_share(share: dict[str, Any], included: list[dict[str, Any]]) -> dict[str, Any] | None:
     """Parse a Voyager share/update element into a normalized post."""
     urn = share.get("urn") or share.get("entityUrn") or share.get("dashEntityUrn") or ""
     if not urn:

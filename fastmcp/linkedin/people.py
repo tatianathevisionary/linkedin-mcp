@@ -16,35 +16,53 @@ Together these cover most real "find a person" use cases.
 
 from __future__ import annotations
 
-from typing import Any, Literal, Optional
+import logging
+from typing import Any, Literal
 
-from voyager import VoyagerClient
+from voyager import VoyagerClient, VoyagerError
 
 from .parsers import build_picture_url
+
+logger = logging.getLogger(__name__)
 
 NETWORK_MAP = {"1st": "F", "2nd": "S", "3rd": "O"}
 
 
+def _is_auth_error(exc: Exception) -> bool:
+    """True if the exception is a LinkedIn auth failure (401/403)."""
+    return isinstance(exc, VoyagerError) and exc.status in (401, 403)
+
+
 async def search_people(
     keywords: str,
-    network: Optional[list[Literal["1st", "2nd", "3rd"]]] = None,
-    company: Optional[str] = None,
-    school: Optional[str] = None,
-    location: Optional[str] = None,
+    network: list[Literal["1st", "2nd", "3rd"]] | None = None,
+    location: str | None = None,
     count: int = 25,
     start: int = 0,
 ) -> dict[str, Any]:
     """
     Search LinkedIn people via connections (1st-degree) + global typeahead.
 
+    Client-side filters (applied to whatever the Voyager responses return):
+      - `network`: connection degree. Connections search only surfaces
+        1st-degree, so 2nd/3rd only match typeahead results that expose a
+        degree. Results with an unknown degree are kept when 2nd/3rd is
+        requested (best-effort — degree is often absent from typeahead).
+      - `location`: case-insensitive substring match against each result's
+        `location` field.
+
+    Note: `company` and `school` filters are intentionally NOT supported —
+    the mini-profile responses don't include those fields, so filtering on
+    them would silently drop everything. Use `fetch_linkedin_person` for
+    per-profile company/school detail.
+
     Returns: { total, people: [...], paging: { start, count } }
     """
-    # Connections search has its own Referer
     async with VoyagerClient() as client:
         results: list[dict[str, Any]] = []
         total = 0
 
-        # Strategy 1: search own connections
+        # Strategy 1: search own connections (1st-degree).
         try:
             conn_data = await client.get(
                 "/relationships/dash/connections",
@@ -67,19 +85,34 @@ async def search_people(
                     if "fsd_profile:" in urn:
                         member_ids.append(urn.split("fsd_profile:", 1)[1])
 
-            # Resolve each connection to a mini-profile
+            # Resolve each connection to a mini-profile.
             for member_id in member_ids[: min(count, 25)]:
                 try:
                     profile = await _resolve_profile(client, member_id)
                     if profile:
                         results.append(profile)
-                except Exception:
+                except VoyagerError as e:
+                    if _is_auth_error(e):
+                        logger.warning(
+                            "Auth failure (%s) resolving connection %s — cookie likely expired",
+                            e.status, member_id,
+                        )
+                        raise
+                    logger.warning("Failed to resolve connection %s: %s", member_id, e)
                     continue
-        except Exception:
-            # Connections search may fail — fall through to typeahead
-            pass
+                except Exception as e:  # noqa: BLE001
+                    logger.warning("Failed to resolve connection %s: %s", member_id, e)
+                    continue
+        except VoyagerError as e:
+            if _is_auth_error(e):
+                # Surface expired/invalid cookie clearly instead of returning empty.
+                logger.error("People search auth failure (%s) — LinkedIn cookie is invalid or expired", e.status)
+                raise
+            logger.warning("Connections search failed (%s) — falling through to typeahead", e)
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Connections search failed: %s — falling through to typeahead", e)
 
-        # Strategy 2: global typeahead for cross-network results
+        # Strategy 2: global typeahead for cross-network results.
         if len(results) < count:
             try:
                 ta_data = await client.get(
@@ -100,7 +133,7 @@ async def search_people(
                     title = (lockup.get("title") or {}).get("text") or ""
                     subtitle = (lockup.get("subtitle") or {}).get("text") or ""
 
-                    # Skip if already in results
+                    # Skip if already in results.
                     if any(p.get("publicIdentifier") == public_id_part for p in results):
                         continue
 
@@ -117,18 +150,61 @@ async def search_people(
                     })
                     if len(results) >= count:
                         break
-            except Exception:
-                pass
+            except VoyagerError as e:
+                if _is_auth_error(e):
+                    logger.error("Typeahead auth failure (%s) — LinkedIn cookie is invalid or expired", e.status)
+                    raise
+                logger.warning("Typeahead search failed (%s)", e)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("Typeahead search failed: %s", e)
+
+        # ---- Client-side filtering on fields the results actually expose ----
+        filtered = _apply_filters(results, network=network, location=location)
 
         return {
-            "total": max(total, len(results)),
-            "people": results[:count],
-            "paging": {"start": start, "count": len(results[:count])},
+            "total": max(total, len(filtered)),
+            "people": filtered[:count],
+            "paging": {"start": start, "count": len(filtered[:count])},
         }
 
 
-async def _resolve_profile(client: VoyagerClient, member_id: str) -> Optional[dict[str, Any]]:
-    """Resolve a member URN to a mini-profile via dash/profiles."""
+def _apply_filters(
+    people: list[dict[str, Any]],
+    network: list[Literal["1st", "2nd", "3rd"]] | None,
+    location: str | None,
+) -> list[dict[str, Any]]:
+    """Filter merged people results by network degree and/or location substring."""
+    out = people
+
+    if network:
+        wanted = set(network)
+        # 1st-degree is reliably known (connections). For 2nd/3rd the degree is
+        # frequently absent from typeahead, so keep unknown-degree results when
+        # a non-1st degree is requested rather than dropping everything.
+        allow_unknown = bool(wanted - {"1st"})
+        out = [
+            p for p in out
+            if (p.get("connectionDegree") in wanted)
+            or (allow_unknown and p.get("connectionDegree") is None)
+        ]
+
+    if location:
+        loc_lower = location.lower()
+        out = [
+            p for p in out
+            if (p.get("location") or "").lower().find(loc_lower) >= 0
+        ]
+
+    return out
+
+
+async def _resolve_profile(client: VoyagerClient, member_id: str) -> dict[str, Any] | None:
+    """
+    Resolve a member URN to a mini-profile via dash/profiles.
+
+    Auth errors (401/403) propagate so the caller can surface an expired
+    cookie. Other errors return None (this single profile is skippable).
+    """
     try:
         data = await client.get(
             "/identity/dash/profiles",
@@ -140,7 +216,13 @@ async def _resolve_profile(client: VoyagerClient, member_id: str) -> Optional[di
                 ),
             },
         )
-    except Exception:
+    except VoyagerError as e:
+        if _is_auth_error(e):
+            raise
+        logger.warning("Profile resolution failed for %s: %s", member_id, e)
+        return None
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Profile resolution failed for %s: %s", member_id, e)
         return None
 
     included = data.get("included") or []

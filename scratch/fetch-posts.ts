@@ -6,11 +6,13 @@
  * tab of a member's activity page. Engagement counts (reactions, comments,
  * reposts) are pulled from the socialDetail block on each share.
  *
- * CLI: npm run linkedin:posts -- [--count N] [--raw path]
+ * NOT REGISTERED / NOT BUILT. Quarantined in scratch/ — see fetch-posts.NOTES.md.
+ * Targets a known-broken endpoint; excluded from tsconfig so it doesn't ship
+ * to dist/. Run ad hoc with: npx tsx scratch/fetch-posts.ts [--count N] [--raw path]
  */
 
 import { writeFileSync } from 'fs';
-import { getCookieHeader } from '../../chrome.js';
+import { getCookieHeader } from '../src/chrome.js';
 
 const BASE = 'https://www.linkedin.com/voyager/api';
 
